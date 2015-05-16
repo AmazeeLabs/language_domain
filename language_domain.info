@@ -1,0 +1,7 @@
+name = Language Domain
+description = Attaches domains to languages.
+package = Domain Access
+core = 7.x
+
+dependencies[] = locale
+dependencies[] = domain

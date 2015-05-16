@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * The module allows attach domains to languages. See README.md for more info.
+ */
+
+require_once dirname(__FILE__) . '/language_domain.language_admin.inc';
+
+/**
+ * Implements hook_domain_bootstrap_lookup().
+ */
+function language_domain_domain_bootstrap_lookup($domain) {
+  // The database layer is here, however some other features may not be
+  // available at this point. So, we don't call language_list() here.
+  $languages = db_select('languages', 'l')
+    ->fields('l', array('language', 'prefix'))
+    ->execute()
+    ->fetchAll(PDO::FETCH_OBJ);
+  list($language) = language_domain_language_url_split_prefix(isset($_GET['q']) ? $_GET['q'] : '', $languages);
+  if ($language !== FALSE) {
+    $language_domain_map = variable_get('language_domain_map', array());
+    if (!empty($language_domain_map[$language->language])) {
+      $domain_id = $language_domain_map[$language->language];
+      $domain = db_select('domain', 'd')
+        ->fields('d', array('domain_id', 'subdomain', 'sitename', 'scheme', 'valid', 'weight', 'is_default', 'machine_name'))
+        ->condition('d.domain_id', $domain_id)
+        ->execute()
+        ->fetch(PDO::FETCH_ASSOC);
+      if ($domain) {
+        return $domain;
+      }
+    }
+  }
+  return $domain;
+}
+
+/**
+ * Implements hook_language_negotiation_info_alter().
+ */
+function language_domain_language_negotiation_info_alter(array &$language_providers) {
+  $language_providers['locale-url']['callbacks']['language'] = 'language_domain_locale_language_from_url';
+  $language_providers['locale-url']['file'] = drupal_get_path('module', 'language_domain') . '/language_domain.language_negotiation.inc';
+}
+
+/**
+ * A replacement for the language_url_split_prefix() function.
+ *
+ * It does absolutely the same job, except it support language path prefixes
+ * containing slashes.
+ *
+ * @see language_url_split_prefix()
+ */
+function language_domain_language_url_split_prefix($path, $languages) {
+  foreach ($languages as $language) {
+    if ($language->prefix !== '') {
+      if ($path === $language->prefix) {
+        return array($language, '');
+      }
+    }
+    if (strpos($path, $language->prefix . '/') === 0) {
+      return array($language, substr($path, strlen($language->prefix) + 1));
+    }
+  }
+  return array(FALSE, $path);
+}
+
+/**
+ * Implements hook_language_switch_links_alter().
+ *
+ * Ensures that languages with inactive domains assigned are not in the list.
+ */
+function language_domain_language_switch_links_alter(array &$links, $type, $path) {
+  if (user_access('access inactive domains')) {
+    return;
+  }
+  $domains = domain_domains();
+  $language_domain_map = variable_get('language_domain_map', array());
+  foreach ($links as $langcode => $link) {
+    if (isset($language_domain_map[$langcode]) && isset($domains[$language_domain_map[$langcode]])) {
+      $domain = $domains[$language_domain_map[$langcode]];
+      if (!$domain['valid']) {
+        unset($links[$langcode]);
+      }
+    }
+  }
+}
