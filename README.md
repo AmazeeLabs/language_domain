@@ -1,6 +1,6 @@
 # Language Domain
 
-A Drupal module that allows attach domains to languages.
+A Drupal module that allows attaching domains to languages.
 
 The dependencies are locale and domain. However the module is designed to be used with language_fallback and redirector.
 
