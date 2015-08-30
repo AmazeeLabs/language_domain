@@ -61,9 +61,14 @@ function language_domain_form_locale_languages_edit_form_alter(&$form, &$form_st
  * Additional submit handler for the "locale_languages_edit_form" form.
  */
 function language_domain_languages_edit_form_submit(&$form, &$form_state) {
-  if (!empty($form_state['values']['language_domain'])) {
+  if (isset($form_state['values']['language_domain'])) {
     $language_domain_map = variable_get('language_domain_map', array());
-    $language_domain_map[$form_state['values']['langcode']] = $form_state['values']['language_domain'];
+    if (empty($form_state['values']['language_domain'])) {
+      unset($language_domain_map[$form_state['values']['langcode']]);
+    }
+    else {
+      $language_domain_map[$form_state['values']['langcode']] = $form_state['values']['language_domain'];
+    }
     variable_set('language_domain_map', $language_domain_map);
   }
 }
