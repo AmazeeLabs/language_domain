@@ -35,13 +35,34 @@ function language_domain_preprocess_table(&$vars) {
  * Implements hook_form_FORM_ID_alter().
  */
 function language_domain_form_locale_languages_edit_form_alter(&$form, &$form_state) {
+  _language_domain_alter_language_form($form, $form);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function language_domain_form_locale_languages_custom_form_alter(&$form, &$form_state) {
+  _language_domain_alter_language_form($form, $form['custom language']);
+}
+
+/**
+ * Alters add/edit language forms, adds "Attached domain" selector.
+ *
+ * @param array $form
+ *   The whole form.
+ * @param array $language_element
+ *   The part of the form containing language property elements.
+ */
+function _language_domain_alter_language_form(&$form, &$language_element) {
   $options = array('' => t('<none>'));
   foreach (domain_domains() as $data) {
     $options[$data['domain_id']] = $data['sitename'];
   }
   $language_domain_map = variable_get('language_domain_map', array());
-  $default_value = isset($language_domain_map[$form['langcode']['#value']]) ? $language_domain_map[$form['langcode']['#value']] : '';
-  $form['language_domain'] = array(
+  $default_value = isset($language_element['langcode']['#value']) && isset($language_domain_map[$language_element['langcode']['#value']])
+    ? $language_domain_map[$language_element['langcode']['#value']]
+    : '';
+  $language_element['language_domain'] = array(
     '#type' => 'select',
     '#title' => t('Attached domain'),
     '#options' => $options,
