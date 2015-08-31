@@ -15,6 +15,8 @@ function language_domain_preprocess_table(&$vars) {
     $languages = language_list();
     $domains = domain_domains();
     $language_domain_map = variable_get('language_domain_map', array());
+    $vars['header'][0]['data'] = t('Name for admins');
+    $vars['header'][1]['data'] = t('Name for visitors');
     array_splice($vars['header'], 3, 0, array(
       array('data' => t('Path prefix')),
       array('data' => t('Attached domain')),
@@ -54,6 +56,11 @@ function language_domain_form_locale_languages_custom_form_alter(&$form, &$form_
  *   The part of the form containing language property elements.
  */
 function _language_domain_alter_language_form(&$form, &$language_element) {
+  $language_element['name']['#title'] = t('Name for admins');
+  $language_element['name']['#description'] = t('This name will be visible for admins only.');
+  $language_element['native']['#title'] = t('Name for visitors');
+  $language_element['native']['#description'] = t('This name will be visible in the language switcher.');
+
   $options = array('' => t('<none>'));
   foreach (domain_domains() as $data) {
     $options[$data['domain_id']] = $data['sitename'];
