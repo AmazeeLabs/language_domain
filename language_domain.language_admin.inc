@@ -36,6 +36,55 @@ function language_domain_preprocess_table(&$vars) {
 /**
  * Implements hook_form_FORM_ID_alter().
  */
+function language_domain_form_locale_languages_overview_form_alter(&$form, &$form_state) {
+
+  // Detect the language_fallback 7.x-2.x version.
+  if (
+    module_exists('language_fallback')
+    && ($modules = system_list('module_enabled'))
+    && isset($modules['language_fallback']->schema_version)
+    && $modules['language_fallback']->schema_version >= 7200
+  ) {
+
+    // Add the graph visualizing the language fallback.
+    $languages = language_list();
+    $chains = db_select('language_fallback', 'lf')
+      ->fields('lf', array('language', 'chain'))
+      ->execute()
+      ->fetchAllKeyed();
+    $links = array();
+    foreach ($chains as $langcode => $chain) {
+      $chain = explode('|', $chain);
+      $source = $langcode;
+      foreach ($chain as $target) {
+        $link = array(
+          'source' => $languages[$source]->name,
+          'target' => $languages[$target]->name,
+        );
+        if (!in_array($link, $links, TRUE)) {
+          $links[] = $link;
+        }
+        $source = $target;
+      }
+    }
+    $form['#attached']['js'][] = array(
+      'type' => 'setting',
+      'data' => array(
+        'language_fallback_overview_links' => $links,
+      ),
+    );
+    $form['#attached']['css'][] = drupal_get_path('module', 'language_domain') . '/css/language_fallback_overview.css';
+    $form['#attached']['js']['http://d3js.org/d3.v3.js'] = array(
+      'type' => 'external',
+    );
+    $form['#attached']['js'][] = drupal_get_path('module', 'language_domain') . '/js/language_fallback_overview.js';
+    $form['actions']['#suffix'] = '<br /><div style="text-align: center;">' . t('Language fallback overview') . '</div><div id="language-fallback-overview-graph"></div>';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function language_domain_form_locale_languages_edit_form_alter(&$form, &$form_state) {
   _language_domain_alter_language_form($form, $form);
 }
