@@ -71,15 +71,18 @@ function language_domain_language_url_split_prefix($path, $languages) {
  * Ensures that languages with inactive domains assigned are not in the list.
  */
 function language_domain_language_switch_links_alter(array &$links, $type, $path) {
-  if (user_access('access inactive domains')) {
-    return;
-  }
+  $access_inactive_domains = user_access('access inactive domains');
   $domains = domain_domains();
   $language_domain_map = variable_get('language_domain_map', array());
   foreach ($links as $langcode => $link) {
-    if (isset($language_domain_map[$langcode]) && isset($domains[$language_domain_map[$langcode]])) {
+    if (empty($language_domain_map[$langcode])) {
+      // Remove languages that are not attached to domains.
+      unset($links[$langcode]);
+    }
+    elseif (!$access_inactive_domains && isset($language_domain_map[$langcode]) && isset($domains[$language_domain_map[$langcode]])) {
       $domain = $domains[$language_domain_map[$langcode]];
       if (!$domain['valid']) {
+        // Remove languages that are attached to inactive domains.
         unset($links[$langcode]);
       }
     }
